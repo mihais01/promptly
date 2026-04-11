@@ -6,9 +6,10 @@ static void promtply_write(const char *message, size_t length) {
     (void) message;   /* Unused parameter */
     (void) length;    /* Unused parameter */
 
-
-    /* For demonstration purposes, we'll just write to stdout regardless of the interface */
-    fwrite(message, sizeof(char), length, stdout);
+    for (size_t i = 0; i < length; i++)
+    {
+        fputc(message[i], stdout);
+    }
     fflush(stdout);
 }
 
@@ -34,15 +35,17 @@ int main(void)
         .prompt = ">>> ",
         .prompt_length = 4,
         .write = promtply_write,
+
+        .state = PROMTLY_NONE,
     };
 
     for(;;)
     {
-        char ch = (char)_getch();
-        promtly_edit_line(&ctx, ch);
+        if(_kbhit()) 
+        {
+            promtly_edit_line(&ctx, &(char){(char)_getch()});
+        }
     }    
-
-    while(1){};
 
     return 0;
 }

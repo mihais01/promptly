@@ -6,15 +6,86 @@
 #define PROMTLY_DEFAULT_COLS 80
 #define PROMTLY_DEFAULT_ROWS 24
 
+#define SET_CTX_STATE(ctx, new_state) ctx->state = new_state;
+
 #define PROMPTLY_WRITE(ctx, message) \
             ctx->write(message, strlen(message));
 
+#define PROMTLY_CONTINUE(ctx) promtly_edit_line(ctx, &(char){'\0'});
 
-void promtly_edit_line(PROMTLY_CTX, char ch) {
-    (void) ch; /* Unused parameter */
+enum promtly_result promtly_edit_line(PROMTLY_CTX, char* ch) {
     if(ctx == NULL) {
-        return;
+        return PROMTLY_ERROR;
     }
+
+    if(ch == NULL)
+    {
+        return PROMTLY_IDLE;
+    }
+
+    switch (ctx->state)
+    {
+    case PROMTLY_NONE: {
+        SET_CTX_STATE(ctx, PROMTLY_REQ_DSR);
+        return PROMTLY_CONTINUE(ctx);
+    }
+    
+    case PROMTLY_REQ_DSR: {
+        PROMPTLY_WRITE(ctx, "\x1b[6n"); /* Request Device Status Report */
+        SET_CTX_STATE(ctx, PROMTLY_PARSE_DSR);
+        return PROMTLY_IDLE;
+    }
+
+    case PROMTLY_PARSE_DSR: {
+        if(*ch=='R')
+        {
+            ctx->metadata[ctx->metadata_length] = '\0'; /* Null-terminate the metadata */
+            if (sscanf(ctx->metadata, "\x1b[%zu;%zu", &ctx->rows, &ctx->cols) != 2) {
+                ctx->cols = PROMTLY_DEFAULT_COLS; /* Fallback to default if parsing fails */
+                ctx->rows = PROMTLY_DEFAULT_ROWS;
+            }
+            ctx->metadata_length = 0; /* Reset metadata length for future use */
+            SET_CTX_STATE(ctx, PROMTLY_PRINT_PROMPT);
+            return PROMTLY_CONTINUE(ctx); /* Trigger the next state immediately */
+        }
+        else
+        {
+            if (ctx->metadata_length < sizeof(ctx->metadata) - 1) {
+                ctx->metadata[ctx->metadata_length] = *ch; /* Store metadata characters */
+                ctx->metadata_length++;
+            }
+            else {
+                /* Metadata buffer overflow, reset state */
+                ctx->metadata_length = 0;
+                SET_CTX_STATE(ctx, PROMTLY_PRINT_PROMPT);
+                return PROMTLY_CONTINUE(ctx); /* Trigger the next state immediately */
+            }
+            return PROMTLY_IDLE;
+        }
+    }
+
+    case PROMTLY_PRINT_PROMPT: {
+        promtly_show_prompt(ctx);
+        SET_CTX_STATE(ctx, PROMTLY_PARSE_INPUT);
+        return PROMTLY_IDLE;
+    }
+
+    case PROMTLY_PARSE_INPUT: {
+        char message[2] = {*ch, '\0'};
+        PROMPTLY_WRITE(ctx, message);
+        return PROMTLY_IDLE;
+    }
+
+    default:
+        break;
+    }
+
+    return PROMTLY_ERROR;
+}
+
+void promtly_show_prompt(PROMTLY_CTX) {
+    PROMPTLY_WRITE(ctx, "\x1b[1G");
+    PROMPTLY_WRITE(ctx, ctx->prompt);
 }
 
 void promptly_greet(void) {
