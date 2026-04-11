@@ -7,6 +7,10 @@
 
 #define PROMTLY_CTX struct promtly_ctx *const ctx
 
+enum promptly_ctx_state {
+    PROMTLY_NONE = 0,
+};
+
 struct promtly_ctx {
     /* ==== Public configuration ==== */
     const char *prompt;
@@ -18,9 +22,10 @@ struct promtly_ctx {
     size_t cols;
     size_t rows; 
 
+    enum promptly_ctx_state state;
 };
 
-void promtly_edit_line(PROMTLY_CTX);
+void promtly_edit_line(PROMTLY_CTX, char ch);
 
 void promptly_greet(void);
 

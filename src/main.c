@@ -13,7 +13,6 @@ static void promtply_write(const char *message, size_t length) {
 }
 
 /*
-
 static ssize_t promtply_read(char *buffer, size_t length) {
     size_t i = 0;
     for (; i < length; i++)
@@ -36,7 +35,12 @@ int main(void)
         .prompt_length = 4,
         .write = promtply_write,
     };
-    promtly_edit_line(&ctx);
+
+    for(;;)
+    {
+        char ch = (char)_getch();
+        promtly_edit_line(&ctx, ch);
+    }    
 
     while(1){};
 

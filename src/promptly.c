@@ -10,7 +10,8 @@
             ctx->write(message, strlen(message));
 
 
-void promtly_edit_line(PROMTLY_CTX) {
+void promtly_edit_line(PROMTLY_CTX, char ch) {
+    (void) ch; /* Unused parameter */
     if(ctx == NULL) {
         return;
     }
