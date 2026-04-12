@@ -59,13 +59,13 @@ int main(void)
             if(_kbhit()) /* Check if a key has been pressed */
             {
                 /* Character pressed by the user */
-                char ch = (char)_getch(); 
+                const char ch = (char)_getch(); 
 
                 /* Pass the character to the Promptly line editor. If the user presses 
                    Enter, the function will return PROMPTLY_END_LINE, indicating that 
                    the line input is complete and can be processed.
                 */
-                if( promptly_edit_line(&ctx, &ch) == PROMPTLY_END_LINE) 
+                if( promptly_edit_line(&ctx, ch) == PROMPTLY_END_LINE) 
                 {
                     printf("\nYou entered: %s\n", ctx.line);
                     break;

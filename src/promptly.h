@@ -50,7 +50,7 @@ struct promptly_ctx {
     uint8_t metadata_length;
 };
 
-promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch);
+promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch);
 
 promptly_result_t promptly_start_line(PROMPTLY_CTX);
 

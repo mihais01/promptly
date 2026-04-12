@@ -13,7 +13,7 @@
 
 #define PROMPTLY_WRITE_STR(ctx, message) PROMPTLY_WRITE(ctx, message, strlen(message)) 
 
-#define PROMPTLY_CONTINUE(ctx) promptly_edit_line(ctx, &(char){'\0'});
+#define PROMPTLY_CONTINUE(ctx) promptly_edit_line(ctx, '\0');
 
 typedef enum promptly_key {
     PROMPTLY_UNKNOWN = 0,
@@ -68,14 +68,9 @@ static void restore_cursor_position(PROMPTLY_CTX) {
     PROMPTLY_WRITE(ctx, restore_cursor_seq, sizeof(restore_cursor_seq) - 1);
 }
 
-promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch) {
+promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch) {
     if(ctx == NULL) {
         return PROMPTLY_ERROR;
-    }
-
-    if(ch == NULL)
-    {
-        return PROMPTLY_IDLE;
     }
 
     switch (ctx->state)
@@ -92,7 +87,7 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch) {
     }
 
     case PROMPTLY_PARSE_DSR: {
-        if(*ch=='R')
+        if(ch=='R')
         {
             ctx->metadata[ctx->metadata_length] = '\0'; /* Null-terminate the metadata */
             if (sscanf(ctx->metadata, "\x1b[%zu;%zu", &ctx->rows, &ctx->cols) != 2) {
@@ -106,7 +101,7 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch) {
         else
         {
             if (ctx->metadata_length < sizeof(ctx->metadata) - 1) {
-                ctx->metadata[ctx->metadata_length] = *ch; /* Store metadata characters */
+                ctx->metadata[ctx->metadata_length] = ch; /* Store metadata characters */
                 ctx->metadata_length++;
             }
             else {
@@ -126,7 +121,7 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch) {
     }
 
     case PROMPTLY_PARSE_INPUT: {
-        const promptly_key_t key_type = classify_key(*ch);
+        const promptly_key_t key_type = classify_key(ch);
         switch (key_type)
         {
         case PROMPTLY_BACKSPACE: {
@@ -177,7 +172,7 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch) {
                                 &ctx->line[ctx->line_wpos], 
                                 to_shift);
                                 
-                        ctx->line[ctx->line_wpos] = *ch; 
+                        ctx->line[ctx->line_wpos] = ch; 
                         PROMPTLY_WRITE(ctx, &ctx->line[ctx->line_wpos], to_shift + 1);
 
                         ctx->line_wpos++;
@@ -187,10 +182,10 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch) {
                     }
                     else
                     {
-                        ctx->line[ctx->line_wpos] = *ch; 
+                        ctx->line[ctx->line_wpos] = ch; 
                         ctx->line_wpos++;
                         ctx->line_size++;
-                        PROMPTLY_WRITE(ctx, ch, 1);
+                        PROMPTLY_WRITE(ctx, &ch, 1);
                     }
                 }
         }
@@ -211,7 +206,7 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch) {
     case PROMPTLY_PARSE_EXTENDED: {
         enum { LEFT_ARROW = 'K', RIGHT_ARROW = 'M', UP_ARROW = 'H', DOWN_ARROW = 'P' };
         
-        switch (*ch) {
+        switch (ch) {
             case LEFT_ARROW:
             {
                 // Allow moving left only if we're not at the beginning of the line
