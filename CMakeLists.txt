@@ -78,7 +78,7 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
-add_executable(promptly src/main.c)
+add_executable(promptly examples/example.c)
 
 target_link_libraries(promptly PRIVATE promptly_lib)
 
