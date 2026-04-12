@@ -11,9 +11,8 @@ enum promptly_ctx_state {
     PROMTLY_NONE = 0,
     PROMTLY_REQ_DSR,       /* Request Device Status Report (for cursor pos)*/
     PROMTLY_PARSE_DSR, 
-    PROMTLY_PRINT_PROMPT,
+    PROMTLY_SHOW_LINE,
     PROMTLY_PARSE_INPUT,
-
 };
 
 typedef enum promtly_result {
@@ -23,6 +22,11 @@ typedef enum promtly_result {
     PROMTLY_ERROR,
 } promtly_result_t;
 
+struct promtly_cursor {
+    size_t row;
+    size_t col;
+};
+
 struct promtly_ctx {
     /* ==== Public configuration ==== */
     const char *prompt;
@@ -30,7 +34,8 @@ struct promtly_ctx {
 
     char* line;
     size_t line_length;
-    size_t line_i;
+    size_t line_size;
+    size_t line_wpos;
 
     void (*write)(const char *message, size_t length);
 
@@ -38,9 +43,9 @@ struct promtly_ctx {
     size_t cols;
     size_t rows; 
 
+    struct promtly_cursor cursor;
     enum promptly_ctx_state state;
 
-    /* Used for storing temporary metadata */
     char metadata[32];
     uint8_t metadata_length;
 };
@@ -49,7 +54,7 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch);
 
 promtly_result_t promtly_start_line(PROMTLY_CTX);
 
-void promtly_show_prompt(PROMTLY_CTX);
+void promtly_show_line(PROMTLY_CTX);
 
 void promptly_greet(void);
 

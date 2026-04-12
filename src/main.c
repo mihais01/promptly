@@ -36,7 +36,7 @@ int main(void)
 
         .line = line,
         .line_length = sizeof(line),
-        .line_i = 5,
+        .line_size = 5,
 
         /* Initialize private metadata */
         .state = PROMTLY_NONE,

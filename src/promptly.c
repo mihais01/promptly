@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "promptly.h"
 
@@ -46,7 +47,7 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                 ctx->rows = PROMTLY_DEFAULT_ROWS;
             }
             ctx->metadata_length = 0; /* Reset metadata length for future use */
-            SET_CTX_STATE(ctx, PROMTLY_PRINT_PROMPT);
+            SET_CTX_STATE(ctx, PROMTLY_SHOW_LINE);
             return PROMTLY_CONTINUE(ctx); /* Trigger the next state immediately */
         }
         else
@@ -58,32 +59,42 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
             else {
                 /* Metadata buffer overflow, reset state */
                 ctx->metadata_length = 0;
-                SET_CTX_STATE(ctx, PROMTLY_PRINT_PROMPT);
+                SET_CTX_STATE(ctx, PROMTLY_SHOW_LINE);
                 return PROMTLY_CONTINUE(ctx); /* Trigger the next state immediately */
             }
             return PROMTLY_IDLE;
         }
     }
 
-    case PROMTLY_PRINT_PROMPT: {
-        promtly_show_prompt(ctx);
+    case PROMTLY_SHOW_LINE: {
+        promtly_show_line(ctx);
         SET_CTX_STATE(ctx, PROMTLY_PARSE_INPUT);
         return PROMTLY_IDLE;
     }
 
     case PROMTLY_PARSE_INPUT: {
-        if(ctx->line_i < ctx->line_length - 1) {
-            if(*ch == '\n'|| *ch == '\r') {
-                ctx->line[ctx->line_i] = '\0'; /* Null-terminate the line */
-                return PROMTLY_END_LINE;
-            }
-            else {
-                ctx->line[ctx->line_i] = *ch; /* Store the input character */
-                ctx->line_i++;
-                PROMPTLY_WRITE(ctx, ch, 1); /* Echo the character for demonstration */
+        if(*ch == '\b' || *ch == 127) { /* Handle backspace */
+            if(ctx->line_size > 0) {
+                ctx->line_wpos--;
+                ctx->line_size--;
+                PROMTLY_WRITE_STR(ctx, "\b \b"); /* Move cursor back, overwrite with space, move back again */
             }
         }
-
+        else
+        {
+            if(ctx->line_size < ctx->line_length - 1) {
+                if(*ch == '\n'|| *ch == '\r') {
+                    ctx->line[ctx->line_size] = '\0'; /* Null-terminate the line */
+                    return PROMTLY_END_LINE;
+                }
+                else {
+                    ctx->line[ctx->line_wpos] = *ch; /* Store the input character */
+                    ctx->line_wpos++;
+                    ctx->line_size++;
+                    PROMPTLY_WRITE(ctx, ch, 1); /* Echo the character for demonstration */
+                }
+            }
+        }
         return PROMTLY_IDLE;
     }
 
@@ -100,18 +111,18 @@ promtly_result_t promtly_start_line(PROMTLY_CTX)
         return PROMTLY_ERROR;
     }
 
-    ctx->line_i = 0; /* Reset line index for new input */
+    ctx->line_size = 0; /* Reset line index for new input */
+    ctx->line_wpos = 0; /* Reset write position */
     ctx->line[0] = '\0'; /* Clear the line buffer */
     SET_CTX_STATE(ctx, PROMTLY_NONE);
     
     return PROMTLY_CONTINUE(ctx);
 }
 
-void promtly_show_prompt(PROMTLY_CTX) {
+void promtly_show_line(PROMTLY_CTX) {
     PROMTLY_WRITE_STR(ctx, "\x1b[1G");
     PROMTLY_WRITE_STR(ctx, ctx->prompt);
-    PROMPTLY_WRITE(ctx, ctx->line, ctx->line_i);
-
+    PROMPTLY_WRITE(ctx, ctx->line, ctx->line_size);
 }
 
 void promptly_greet(void) {
