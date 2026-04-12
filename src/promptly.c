@@ -151,6 +151,10 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
             }
             break;
             case RIGHT_ARROW:
+                if(ctx->line_wpos < ctx->line_size) {
+                    ctx->line_wpos++;
+                    PROMTLY_WRITE_STR(ctx, "\x1b[C"); /* Move cursor right */
+                }
                 /* Handle right arrow key */
                 break;
             case UP_ARROW:
