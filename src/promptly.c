@@ -116,10 +116,32 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
         case PROMTLY_CHAR: {
                 /* Leave space for null terminator */
                 if(ctx->line_size <= ctx->line_length-1 ) {
+                    bool _inserted = false;
+                    if(ctx->line_wpos < ctx->line_size) {
+                        /* Inserting in the middle of the line, shift existing characters */
+                        memmove(&ctx->line[ctx->line_wpos + 1], &ctx->line[ctx->line_wpos], ctx->line_size - ctx->line_wpos);
+                        _inserted = true;
+                    }
                     ctx->line[ctx->line_wpos] = *ch; 
                     ctx->line_wpos++;
                     ctx->line_size++;
-                    PROMPTLY_WRITE(ctx, ch, 1); 
+
+                    if(_inserted) {
+                        /* If we inserted in the middle, we need to refresh the line to show the changes */
+                        PROMPTLY_WRITE(ctx, &ctx->line[ctx->line_wpos - 1], ctx->line_size - ctx->line_wpos + 1);
+                        
+                        /* Move cursor back to the correct position after refresh */
+                        const size_t move_back = ctx->line_size - ctx->line_wpos;
+                        if(move_back > 0) {
+                            char move_back_seq[24];
+                            snprintf(move_back_seq, sizeof(move_back_seq), "\x1b[%zuD", move_back);
+                            PROMTLY_WRITE_STR(ctx, move_back_seq);
+                        }
+                    }
+                    else {
+                        /* If we appended at the end, just write the new character */
+                        PROMPTLY_WRITE(ctx, ch, 1);
+                    }
                 }
         }
         break;
