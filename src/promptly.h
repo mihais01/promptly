@@ -56,6 +56,8 @@ promtly_result_t promtly_start_line(PROMTLY_CTX);
 
 void promtly_show_line(PROMTLY_CTX);
 
+void promptly_bell(PROMTLY_CTX);
+
 void promptly_greet(void);
 
 #endif

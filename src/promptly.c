@@ -219,12 +219,20 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                     ctx->line_wpos--;
                     PROMPTLY_WRITE_STR(ctx, "\b"); /* Move cursor left */
                 }
+                else
+                {
+                    promptly_bell(ctx); /* Bell to indicate no more left movement */
+                }
             }
             break;
             case RIGHT_ARROW:
                 if(ctx->line_wpos < ctx->line_size) {
                     ctx->line_wpos++;
                     PROMPTLY_WRITE_STR(ctx, "\x1b[C"); /* Move cursor right */
+                }
+                else
+                {
+                    promptly_bell(ctx); /* Bell to indicate no more right movement */
                 }
                 /* Handle right arrow key */
                 break;
@@ -267,6 +275,12 @@ void promtly_show_line(PROMTLY_CTX) {
     PROMPTLY_WRITE_STR(ctx, "\x1b[1G");
     PROMPTLY_WRITE_STR(ctx, ctx->prompt);
     PROMPTLY_WRITE(ctx, ctx->line, ctx->line_size);
+}
+
+void promptly_bell(PROMTLY_CTX)
+{
+    const char bell_seq[] = "\a"; /* ASCII Bell character */
+    PROMPTLY_WRITE(ctx, bell_seq, sizeof(bell_seq) - 1);
 }
 
 void promptly_greet(void) {
