@@ -11,7 +11,7 @@
 
 #define PROMPTLY_WRITE(ctx, message, length) ctx->write(message, length);
 
-#define PROMTLY_WRITE_STR(ctx, message) PROMPTLY_WRITE(ctx, message, strlen(message)) 
+#define PROMPTLY_WRITE_STR(ctx, message) PROMPTLY_WRITE(ctx, message, strlen(message)) 
 
 #define PROMTLY_CONTINUE(ctx) promtly_edit_line(ctx, &(char){'\0'});
 
@@ -45,7 +45,27 @@ static void move_cursor_left(PROMTLY_CTX, size_t positions) {
     }
     char move_back_seq[24];
     snprintf(move_back_seq, sizeof(move_back_seq), "\x1b[%zuD", positions);
-    PROMTLY_WRITE_STR(ctx, move_back_seq);
+    PROMPTLY_WRITE_STR(ctx, move_back_seq);
+}
+
+__attribute__((unused))
+static void move_cursor_right(PROMTLY_CTX, size_t positions) {
+    if(positions == 0) return; /* No need to move */
+    char move_forward_seq[24];
+    snprintf(move_forward_seq, sizeof(move_forward_seq), "\x1b[%zuC", positions);
+    PROMPTLY_WRITE_STR(ctx, move_forward_seq);
+}
+
+__attribute__((unused))
+static void save_cursor_position(PROMTLY_CTX) {
+    const char save_cursor_seq[] = "\033[s";  
+    PROMPTLY_WRITE(ctx, save_cursor_seq, sizeof(save_cursor_seq) - 1);
+}
+
+__attribute__((unused))
+static void restore_cursor_position(PROMTLY_CTX) {
+    const char restore_cursor_seq[] = "\033[u";
+    PROMPTLY_WRITE(ctx, restore_cursor_seq, sizeof(restore_cursor_seq) - 1);
 }
 
 promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
@@ -66,7 +86,7 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
     }
     
     case PROMTLY_REQ_DSR: {
-        PROMTLY_WRITE_STR(ctx, "\x1b[6n"); /* Request Device Status Report */
+        PROMPTLY_WRITE_STR(ctx, "\x1b[6n"); /* Request Device Status Report */
         SET_CTX_STATE(ctx, PROMTLY_PARSE_DSR);
         return PROMTLY_IDLE;
     }
@@ -111,29 +131,28 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
         {
         case PROMTLY_BACKSPACE: {
                 if(ctx->line_wpos > 0) {
-                    const bool _in_middle = ctx->line_wpos < ctx->line_size;
-                    if(_in_middle)
+                    if(ctx->line_wpos < ctx->line_size)
                     {
-                        const size_t to_shift = ctx->line_size - ctx->line_wpos;
+                        /* Deleting in the middle or beginning of the line */
                         memmove(&ctx->line[ctx->line_wpos - 1], 
                                 &ctx->line[ctx->line_wpos], 
-                                to_shift);
+                                ctx->line_size - ctx->line_wpos);
+
+                        ctx->line_wpos--;
+                        ctx->line_size--;
 
                         /* Re-writed the changes to terminal */
-                        PROMTLY_WRITE_STR(ctx, "\b");                 
-                        PROMPTLY_WRITE(ctx, &ctx->line[ctx->line_wpos-1], ctx->line_size - ctx->line_wpos);
-                        PROMTLY_WRITE_STR(ctx, " ");            
+                        PROMPTLY_WRITE_STR(ctx, "\b");                 
+                        PROMPTLY_WRITE(ctx, &ctx->line[ctx->line_wpos], ctx->line_size - ctx->line_wpos);
+                        PROMPTLY_WRITE_STR(ctx, " ");            
                         
-                        const size_t move_back = ctx->line_size - ctx->line_wpos;
-                        if(move_back > 0) {
-                            move_cursor_left(ctx, move_back+1);
-                        }
+                        move_cursor_left(ctx, ctx->line_size - ctx->line_wpos + 1);
                     }
-                    ctx->line_wpos--;
-                    ctx->line_size--;
-                    /* Move cursor back, overwrite with space, move back again */
-                    if(!_in_middle) {   
-                        PROMTLY_WRITE_STR(ctx, "\b \b");                 
+                    else
+                    {
+                        ctx->line_wpos--;
+                        ctx->line_size--;
+                        PROMPTLY_WRITE_STR(ctx, "\b \b");                 
                     }
                 }
         }
@@ -147,29 +166,30 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
 
         case PROMTLY_CHAR: {
                 /* Leave space for null terminator */
-                if(ctx->line_size <= ctx->line_length-1 ) {
-                    bool _inserted = false;
+                if(ctx->line_size <= ctx->line_length-1) {
                     if(ctx->line_wpos < ctx->line_size) {
-                        /* Inserting in the middle of the line, shift existing characters */
-                        memmove(&ctx->line[ctx->line_wpos + 1], &ctx->line[ctx->line_wpos], ctx->line_size - ctx->line_wpos);
-                        _inserted = true;
-                    }
-                    ctx->line[ctx->line_wpos] = *ch; 
-                    ctx->line_wpos++;
-                    ctx->line_size++;
+                        /* Inserting in the middle or beginning of the line */
+                       
+                        size_t to_shift = ctx->line_size - ctx->line_wpos;
 
-                    if(_inserted) {
-                        /* If we inserted in the middle, we need to refresh the line to show the changes */
-                        PROMPTLY_WRITE(ctx, &ctx->line[ctx->line_wpos - 1], ctx->line_size - ctx->line_wpos + 1);
+                        /* Shift left*/
+                        memmove(&ctx->line[ctx->line_wpos + 1], 
+                                &ctx->line[ctx->line_wpos], 
+                                to_shift);
+                                
+                        ctx->line[ctx->line_wpos] = *ch; 
+                        PROMPTLY_WRITE(ctx, &ctx->line[ctx->line_wpos], to_shift + 1);
+
+                        ctx->line_wpos++;
+                        ctx->line_size++;
                         
-                        /* Move cursor back to the correct position after refresh */
-                        const size_t move_back = ctx->line_size - ctx->line_wpos;
-                        if(move_back > 0) {
-                            move_cursor_left(ctx, move_back);
-                        }
+                        move_cursor_left(ctx, ctx->line_size - ctx->line_wpos);
                     }
-                    else {
-                        /* If we appended at the end, just write the new character */
+                    else
+                    {
+                        ctx->line[ctx->line_wpos] = *ch; 
+                        ctx->line_wpos++;
+                        ctx->line_size++;
                         PROMPTLY_WRITE(ctx, ch, 1);
                     }
                 }
@@ -198,14 +218,14 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                 // Allow moving left only if we're not at the beginning of the line
                 if(ctx->line_wpos > 0) {
                     ctx->line_wpos--;
-                    PROMTLY_WRITE_STR(ctx, "\b"); /* Move cursor left */
+                    PROMPTLY_WRITE_STR(ctx, "\b"); /* Move cursor left */
                 }
             }
             break;
             case RIGHT_ARROW:
                 if(ctx->line_wpos < ctx->line_size) {
                     ctx->line_wpos++;
-                    PROMTLY_WRITE_STR(ctx, "\x1b[C"); /* Move cursor right */
+                    PROMPTLY_WRITE_STR(ctx, "\x1b[C"); /* Move cursor right */
                 }
                 /* Handle right arrow key */
                 break;
@@ -246,8 +266,8 @@ promtly_result_t promtly_start_line(PROMTLY_CTX)
 }
 
 void promtly_show_line(PROMTLY_CTX) {
-    PROMTLY_WRITE_STR(ctx, "\x1b[1G");
-    PROMTLY_WRITE_STR(ctx, ctx->prompt);
+    PROMPTLY_WRITE_STR(ctx, "\x1b[1G");
+    PROMPTLY_WRITE_STR(ctx, ctx->prompt);
     PROMPTLY_WRITE(ctx, ctx->line, ctx->line_size);
 }
 
