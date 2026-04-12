@@ -6,11 +6,7 @@ static void promptly_write(const char *message, size_t length) {
     (void) message;   /* Unused parameter */
     (void) length;    /* Unused parameter */
 
-    for (size_t i = 0; i < length; i++)
-    {
-        fputc(message[i], stdout);
-    }
-    fflush(stdout);
+    fwrite(message, 1, length, stdout);
 }
 
 /*
@@ -48,7 +44,6 @@ int main(void)
 
     for(;;)
     {
-
         promtly_start_line(&ctx);
 
         while(1)
