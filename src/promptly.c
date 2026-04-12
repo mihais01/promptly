@@ -15,6 +15,24 @@
 
 #define PROMTLY_CONTINUE(ctx) promtly_edit_line(ctx, &(char){'\0'});
 
+typedef enum promtly_key {
+    PROMTLY_UNKNOWN = 0,
+    PROMTLY_BACKSPACE,
+    PROMTLY_ENTER,
+    PROMTLY_CHAR,
+} promtly_key_t;
+
+static promtly_key_t classify_key(char ch) {
+    if (ch == '\b' || ch == 127) {
+        return PROMTLY_BACKSPACE;
+    } else if (ch == '\n' || ch == '\r') {
+        return PROMTLY_ENTER;
+    } else if (isprint((unsigned char)ch)) {
+        return PROMTLY_CHAR;
+    }
+    return PROMTLY_UNKNOWN;
+} 
+
 promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
     if(ctx == NULL) {
         return PROMTLY_ERROR;
@@ -73,26 +91,40 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
     }
 
     case PROMTLY_PARSE_INPUT: {
-        if(*ch == '\b' || *ch == 127) { /* Handle backspace */
-            if(ctx->line_size > 0) {
-                ctx->line_wpos--;
-                ctx->line_size--;
-                PROMTLY_WRITE_STR(ctx, "\b \b"); /* Move cursor back, overwrite with space, move back again */
-            }
-        }
-        else if(*ch == '\n'|| *ch == '\r') {
-            ctx->line[ctx->line_size] = '\0'; /* Null-terminate the line */
-            return PROMTLY_END_LINE;
-        }
-        else
+        const promtly_key_t key_type = classify_key(*ch);
+
+        switch (key_type)
         {
-            if(ctx->line_size <= ctx->line_length-1 /* Leave space for null terminator */) {
-                ctx->line[ctx->line_wpos] = *ch; /* Store the input character */
-                ctx->line_wpos++;
-                ctx->line_size++;
-                PROMPTLY_WRITE(ctx, ch, 1); /* Echo the character for demonstration */
-            }
+        case PROMTLY_BACKSPACE: {
+                if(ctx->line_size > 0) {
+                    ctx->line_wpos--;
+                    ctx->line_size--;
+                    /* Move cursor back, overwrite with space, move back again */
+                    PROMTLY_WRITE_STR(ctx, "\b \b");                 
+                }
         }
+        break;
+        case PROMTLY_ENTER: {
+                ctx->line[ctx->line_size] = '\0'; /* Null-terminate the line */
+                return PROMTLY_END_LINE;
+        }
+            break;
+        case PROMTLY_CHAR: {
+                /* Leave space for null terminator */
+                if(ctx->line_size <= ctx->line_length-1 ) {
+                    ctx->line[ctx->line_wpos] = *ch; 
+                    ctx->line_wpos++;
+                    ctx->line_size++;
+                    PROMPTLY_WRITE(ctx, ch, 1); 
+                }
+        }
+            break;
+
+        default:
+            printf("Unknown key: %d\n", (unsigned char)*ch);
+            break;
+        }
+
         return PROMTLY_IDLE;
     }
 
