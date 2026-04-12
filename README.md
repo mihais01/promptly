@@ -1,8 +1,6 @@
 
 #TODO
-    - Maybe instead of promtly config for recv
-        Use a push data style 
-            (This will need to re-think some function to works as a fsm)
+    - Add back editing
     - Add flags var to context
     - Send system time in ms to promtly somehow
     - Make a timeout logic for get terminal dimentions
