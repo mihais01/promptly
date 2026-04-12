@@ -8,12 +8,13 @@
 
 #define SET_CTX_STATE(ctx, new_state) ctx->state = new_state;
 
-#define PROMPTLY_WRITE(ctx, message) \
-            ctx->write(message, strlen(message));
+#define PROMPTLY_WRITE(ctx, message, length) ctx->write(message, length);
+
+#define PROMTLY_WRITE_STR(ctx, message) PROMPTLY_WRITE(ctx, message, strlen(message)) 
 
 #define PROMTLY_CONTINUE(ctx) promtly_edit_line(ctx, &(char){'\0'});
 
-enum promtly_result promtly_edit_line(PROMTLY_CTX, char* ch) {
+promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
     if(ctx == NULL) {
         return PROMTLY_ERROR;
     }
@@ -31,7 +32,7 @@ enum promtly_result promtly_edit_line(PROMTLY_CTX, char* ch) {
     }
     
     case PROMTLY_REQ_DSR: {
-        PROMPTLY_WRITE(ctx, "\x1b[6n"); /* Request Device Status Report */
+        PROMTLY_WRITE_STR(ctx, "\x1b[6n"); /* Request Device Status Report */
         SET_CTX_STATE(ctx, PROMTLY_PARSE_DSR);
         return PROMTLY_IDLE;
     }
@@ -71,8 +72,18 @@ enum promtly_result promtly_edit_line(PROMTLY_CTX, char* ch) {
     }
 
     case PROMTLY_PARSE_INPUT: {
-        char message[2] = {*ch, '\0'};
-        PROMPTLY_WRITE(ctx, message);
+        if(ctx->line_i < ctx->line_length - 1) {
+            if(*ch == '\n'|| *ch == '\r') {
+                ctx->line[ctx->line_i] = '\0'; /* Null-terminate the line */
+                return PROMTLY_END_LINE;
+            }
+            else {
+                ctx->line[ctx->line_i] = *ch; /* Store the input character */
+                ctx->line_i++;
+                PROMPTLY_WRITE(ctx, ch, 1); /* Echo the character for demonstration */
+            }
+        }
+
         return PROMTLY_IDLE;
     }
 
@@ -83,9 +94,24 @@ enum promtly_result promtly_edit_line(PROMTLY_CTX, char* ch) {
     return PROMTLY_ERROR;
 }
 
+promtly_result_t promtly_start_line(PROMTLY_CTX)
+{
+    if(ctx == NULL) {
+        return PROMTLY_ERROR;
+    }
+
+    ctx->line_i = 0; /* Reset line index for new input */
+    ctx->line[0] = '\0'; /* Clear the line buffer */
+    SET_CTX_STATE(ctx, PROMTLY_NONE);
+    
+    return PROMTLY_CONTINUE(ctx);
+}
+
 void promtly_show_prompt(PROMTLY_CTX) {
-    PROMPTLY_WRITE(ctx, "\x1b[1G");
-    PROMPTLY_WRITE(ctx, ctx->prompt);
+    PROMTLY_WRITE_STR(ctx, "\x1b[1G");
+    PROMTLY_WRITE_STR(ctx, ctx->prompt);
+    PROMPTLY_WRITE(ctx, ctx->line, ctx->line_i);
+
 }
 
 void promptly_greet(void) {

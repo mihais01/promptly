@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <conio.h>
 
-static void promtply_write(const char *message, size_t length) {
+static void promptly_write(const char *message, size_t length) {
     (void) message;   /* Unused parameter */
     (void) length;    /* Unused parameter */
 
@@ -31,21 +31,37 @@ static ssize_t promtply_read(char *buffer, size_t length) {
 
 int main(void)
 {
+    char line[32] = {'\0'};
+
     struct promtly_ctx ctx = {
         .prompt = ">>> ",
         .prompt_length = 4,
-        .write = promtply_write,
+        .write = promptly_write,
 
+        .line = line,
+        .line_length = sizeof(line),
+        .line_i = 5,
+
+        /* Initialize private metadata */
         .state = PROMTLY_NONE,
     };
 
     for(;;)
     {
-        if(_kbhit()) 
+
+        promtly_start_line(&ctx);
+
+        while(1)
         {
-            promtly_edit_line(&ctx, &(char){(char)_getch()});
+            if(_kbhit()) 
+            {
+               if( promtly_edit_line(&ctx, &(char){(char)_getch()}) == PROMTLY_END_LINE) {
+                   printf("\nYou entered: %s\n", ctx.line);
+                   break;
+               }
+            }
         }
-    }    
+    }
 
     return 0;
 }

@@ -16,17 +16,22 @@ enum promptly_ctx_state {
 
 };
 
-enum promtly_result {
+typedef enum promtly_result {
     PROMTLY_EDIT = 0,
     PROMTLY_IDLE,
+    PROMTLY_END_LINE,
     PROMTLY_ERROR,
-};
+} promtly_result_t;
 
 struct promtly_ctx {
     /* ==== Public configuration ==== */
     const char *prompt;
     size_t prompt_length;
-    
+
+    char* line;
+    size_t line_length;
+    size_t line_i;
+
     void (*write)(const char *message, size_t length);
 
     /* ==== Private Metadata ==== */
@@ -40,7 +45,9 @@ struct promtly_ctx {
     uint8_t metadata_length;
 };
 
-enum promtly_result promtly_edit_line(PROMTLY_CTX, char* ch);
+promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch);
+
+promtly_result_t promtly_start_line(PROMTLY_CTX);
 
 void promtly_show_prompt(PROMTLY_CTX);
 
