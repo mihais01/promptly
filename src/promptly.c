@@ -20,7 +20,7 @@ typedef enum promtly_key {
     PROMTLY_BACKSPACE,
     PROMTLY_ENTER,
     PROMTLY_CHAR,
-    PROMTLY_EXTENDED,
+    PROMTLY_EXTENDED, /* Used for arrow keys */
 } promtly_key_t;
 
 static promtly_key_t classify_key(char ch) {
@@ -30,7 +30,7 @@ static promtly_key_t classify_key(char ch) {
         return PROMTLY_ENTER;
     } else if (isprint((unsigned char)ch)) {
         return PROMTLY_CHAR;
-    } else if (ch == (char)224) {
+    } else if (ch == (char)'\xE0') {
         return PROMTLY_EXTENDED;
     }
     return PROMTLY_UNKNOWN;
@@ -98,11 +98,33 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
         switch (key_type)
         {
         case PROMTLY_BACKSPACE: {
-                if(ctx->line_size > 0) {
+                if(ctx->line_wpos > 0) {
+                    const bool _in_middle = ctx->line_wpos < ctx->line_size;
+                    if(_in_middle)
+                    {
+                        const size_t to_shift = ctx->line_size - ctx->line_wpos;
+                        memmove(&ctx->line[ctx->line_wpos - 1], 
+                                &ctx->line[ctx->line_wpos], 
+                                to_shift);
+
+                        /* Re-writed the changes to terminal */
+                        PROMTLY_WRITE_STR(ctx, "\b");                 
+                        PROMPTLY_WRITE(ctx, &ctx->line[ctx->line_wpos-1], ctx->line_size - ctx->line_wpos);
+                        PROMTLY_WRITE_STR(ctx, " ");            
+                        
+                        const size_t move_back = ctx->line_size - ctx->line_wpos;
+                        if(move_back > 0) {
+                            char move_back_seq[24];
+                            snprintf(move_back_seq, sizeof(move_back_seq), "\x1b[%zuD", move_back+1);
+                            PROMTLY_WRITE_STR(ctx, move_back_seq);
+                        }
+                    }
                     ctx->line_wpos--;
                     ctx->line_size--;
                     /* Move cursor back, overwrite with space, move back again */
-                    PROMTLY_WRITE_STR(ctx, "\b \b");                 
+                    if(!_in_middle) {   
+                        PROMTLY_WRITE_STR(ctx, "\b \b");                 
+                    }
                 }
         }
         break;

@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <conio.h>
 
+#include <windows.h>
+
 static void promptly_write(const char *message, size_t length) {
     (void) message;   /* Unused parameter */
     (void) length;    /* Unused parameter */
@@ -54,6 +56,10 @@ int main(void)
                    printf("\nYou entered: %s\n", ctx.line);
                    break;
                }
+            }
+            else
+            {
+                Sleep(10); /* Sleep briefly to avoid busy-waiting */
             }
         }
     }
