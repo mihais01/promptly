@@ -5,29 +5,29 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define PROMTLY_CTX struct promtly_ctx *const ctx
+#define PROMPTLY_CTX struct promptly_ctx *const ctx
 
 enum promptly_ctx_state {
-    PROMTLY_NONE = 0,
-    PROMTLY_REQ_DSR,       /* Request Device Status Report (for cursor pos)*/
-    PROMTLY_PARSE_DSR, 
-    PROMTLY_SHOW_LINE,
-    PROMTLY_PARSE_INPUT,
-    PROMTLY_PARSE_EXTENDED,
+    PROMPTLY_NONE = 0,
+    PROMPTLY_REQ_DSR,       /* Request Device Status Report (for cursor pos)*/
+    PROMPTLY_PARSE_DSR, 
+    PROMPTLY_SHOW_LINE,
+    PROMPTLY_PARSE_INPUT,
+    PROMPTLY_PARSE_EXTENDED,
 };
 
-typedef enum promtly_result {
-    PROMTLY_IDLE,
-    PROMTLY_END_LINE,
-    PROMTLY_ERROR,
-} promtly_result_t;
+typedef enum promptly_result {
+    PROMPTLY_IDLE,
+    PROMPTLY_END_LINE,
+    PROMPTLY_ERROR,
+} promptly_result_t;
 
-struct promtly_cursor {
+struct promptly_cursor {
     size_t row;
     size_t col;
 };
 
-struct promtly_ctx {
+struct promptly_ctx {
     /* ==== Public configuration ==== */
     const char *prompt;
     size_t prompt_length;
@@ -43,20 +43,20 @@ struct promtly_ctx {
     size_t cols;
     size_t rows; 
 
-    struct promtly_cursor cursor;
+    struct promptly_cursor cursor;
     enum promptly_ctx_state state;
 
     char metadata[32];
     uint8_t metadata_length;
 };
 
-promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch);
+promptly_result_t promptly_edit_line(PROMPTLY_CTX, char* ch);
 
-promtly_result_t promtly_start_line(PROMTLY_CTX);
+promptly_result_t promptly_start_line(PROMPTLY_CTX);
 
-void promtly_show_line(PROMTLY_CTX);
+void promptly_show_line(PROMPTLY_CTX);
 
-void promptly_bell(PROMTLY_CTX);
+void promptly_bell(PROMPTLY_CTX);
 
 void promptly_greet(void);
 
