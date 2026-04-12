@@ -127,11 +127,15 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
                     PROMPTLY_WRITE_STR(ctx, "\b \b");                 
                 }
             }
+            else
+            {
+                promptly_bell(ctx);
+            }
     }
     break;
 
     case PROMPTLY_ENTER: {
-            ctx->line[ctx->line_size] = '\0'; /* Null-terminate the line */
+            ctx->line[ctx->line_size] = '\0';
             return PROMPTLY_END_LINE;
     }
     break;
@@ -141,7 +145,6 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
             if(ctx->line_size <= ctx->line_length-1) {
                 if(ctx->line_wpos < ctx->line_size) {
                     /* Inserting in the middle or beginning of the line */
-                    
                     size_t to_shift = ctx->line_size - ctx->line_wpos;
 
                     /* Shift left*/
@@ -164,6 +167,11 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
                     ctx->line_size++;
                     PROMPTLY_WRITE(ctx, &ch, 1);
                 }
+            }
+            else
+            {
+                /* Bell to indicate line buffer is full */
+                promptly_bell(ctx);             
             }
     }
     break;
@@ -270,9 +278,9 @@ promptly_result_t promptly_start_line(PROMPTLY_CTX)
         return PROMPTLY_ERROR;
     }
 
-    ctx->line_size = 0; /* Reset line index for new input */
-    ctx->line_wpos = 0; /* Reset write position */
-    ctx->line[0] = '\0'; /* Clear the line buffer */
+    ctx->line_size = 0;     /* Reset line index for new input */
+    ctx->line_wpos = 0;     /* Reset write position */
+    ctx->line[0] = '\0';    /* Clear the line buffer */
     SET_CTX_STATE(ctx, PROMPTLY_NONE);
     
     return PROMPTLY_CONTINUE(ctx);
