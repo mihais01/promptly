@@ -13,6 +13,7 @@ enum promptly_ctx_state {
     PROMTLY_PARSE_DSR, 
     PROMTLY_SHOW_LINE,
     PROMTLY_PARSE_INPUT,
+    PROMTLY_PARSE_EXTENDED,
 };
 
 typedef enum promtly_result {

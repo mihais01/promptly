@@ -20,6 +20,7 @@ typedef enum promtly_key {
     PROMTLY_BACKSPACE,
     PROMTLY_ENTER,
     PROMTLY_CHAR,
+    PROMTLY_EXTENDED,
 } promtly_key_t;
 
 static promtly_key_t classify_key(char ch) {
@@ -29,6 +30,8 @@ static promtly_key_t classify_key(char ch) {
         return PROMTLY_ENTER;
     } else if (isprint((unsigned char)ch)) {
         return PROMTLY_CHAR;
+    } else if (ch == (char)224) {
+        return PROMTLY_EXTENDED;
     }
     return PROMTLY_UNKNOWN;
 } 
@@ -92,7 +95,6 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
 
     case PROMTLY_PARSE_INPUT: {
         const promtly_key_t key_type = classify_key(*ch);
-
         switch (key_type)
         {
         case PROMTLY_BACKSPACE: {
@@ -104,11 +106,13 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                 }
         }
         break;
+
         case PROMTLY_ENTER: {
                 ctx->line[ctx->line_size] = '\0'; /* Null-terminate the line */
                 return PROMTLY_END_LINE;
         }
-            break;
+        break;
+
         case PROMTLY_CHAR: {
                 /* Leave space for null terminator */
                 if(ctx->line_size <= ctx->line_length-1 ) {
@@ -118,13 +122,49 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                     PROMPTLY_WRITE(ctx, ch, 1); 
                 }
         }
-            break;
+        break;
+
+        case PROMTLY_EXTENDED: {
+           SET_CTX_STATE(ctx, PROMTLY_PARSE_EXTENDED);
+           break;  
+        }
 
         default:
             printf("Unknown key: %d\n", (unsigned char)*ch);
             break;
         }
 
+        return PROMTLY_IDLE;
+    }
+
+    case PROMTLY_PARSE_EXTENDED: {
+        enum { LEFT_ARROW = 'K', RIGHT_ARROW = 'M', UP_ARROW = 'H', DOWN_ARROW = 'P' };
+        
+        switch (*ch) {
+            case LEFT_ARROW:
+            {
+                // Allow moving left only if we're not at the beginning of the line
+                if(ctx->line_wpos > 0) {
+                    ctx->line_wpos--;
+                    PROMTLY_WRITE_STR(ctx, "\b"); /* Move cursor left */
+                }
+            }
+            break;
+            case RIGHT_ARROW:
+                /* Handle right arrow key */
+                break;
+            case UP_ARROW:
+                /* Handle up arrow key */
+                break;
+            case DOWN_ARROW:
+                /* Handle down arrow key */
+                break;
+            default:
+                printf("Unknown extended key: %d\n", (unsigned char)*ch);
+                break;
+        }
+
+        SET_CTX_STATE(ctx, PROMTLY_PARSE_INPUT);
         return PROMTLY_IDLE;
     }
 
