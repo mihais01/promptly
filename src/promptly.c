@@ -34,7 +34,19 @@ static promtly_key_t classify_key(char ch) {
         return PROMTLY_EXTENDED;
     }
     return PROMTLY_UNKNOWN;
-} 
+}
+
+static void move_cursor_left(PROMTLY_CTX, size_t positions) {
+    if(positions == 0) return; /* No need to move */
+    if(positions == 1) {
+        /* Optimization for single position move */
+        PROMPTLY_WRITE(ctx, &(char){'\b'}, 1);
+        return;
+    }
+    char move_back_seq[24];
+    snprintf(move_back_seq, sizeof(move_back_seq), "\x1b[%zuD", positions);
+    PROMTLY_WRITE_STR(ctx, move_back_seq);
+}
 
 promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
     if(ctx == NULL) {
@@ -114,9 +126,7 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                         
                         const size_t move_back = ctx->line_size - ctx->line_wpos;
                         if(move_back > 0) {
-                            char move_back_seq[24];
-                            snprintf(move_back_seq, sizeof(move_back_seq), "\x1b[%zuD", move_back+1);
-                            PROMTLY_WRITE_STR(ctx, move_back_seq);
+                            move_cursor_left(ctx, move_back+1);
                         }
                     }
                     ctx->line_wpos--;
@@ -155,9 +165,7 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                         /* Move cursor back to the correct position after refresh */
                         const size_t move_back = ctx->line_size - ctx->line_wpos;
                         if(move_back > 0) {
-                            char move_back_seq[24];
-                            snprintf(move_back_seq, sizeof(move_back_seq), "\x1b[%zuD", move_back);
-                            PROMTLY_WRITE_STR(ctx, move_back_seq);
+                            move_cursor_left(ctx, move_back);
                         }
                     }
                     else {
