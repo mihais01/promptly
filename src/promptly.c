@@ -80,19 +80,17 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                 PROMTLY_WRITE_STR(ctx, "\b \b"); /* Move cursor back, overwrite with space, move back again */
             }
         }
+        else if(*ch == '\n'|| *ch == '\r') {
+            ctx->line[ctx->line_size] = '\0'; /* Null-terminate the line */
+            return PROMTLY_END_LINE;
+        }
         else
         {
-            if(ctx->line_size < ctx->line_length - 1) {
-                if(*ch == '\n'|| *ch == '\r') {
-                    ctx->line[ctx->line_size] = '\0'; /* Null-terminate the line */
-                    return PROMTLY_END_LINE;
-                }
-                else {
-                    ctx->line[ctx->line_wpos] = *ch; /* Store the input character */
-                    ctx->line_wpos++;
-                    ctx->line_size++;
-                    PROMPTLY_WRITE(ctx, ch, 1); /* Echo the character for demonstration */
-                }
+            if(ctx->line_size <= ctx->line_length-1 /* Leave space for null terminator */) {
+                ctx->line[ctx->line_wpos] = *ch; /* Store the input character */
+                ctx->line_wpos++;
+                ctx->line_size++;
+                PROMPTLY_WRITE(ctx, ch, 1); /* Echo the character for demonstration */
             }
         }
         return PROMTLY_IDLE;
