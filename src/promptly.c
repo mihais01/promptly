@@ -96,7 +96,7 @@ static promptly_result_t parse_dsr_response(PROMPTLY_CTX, const char ch) {
     }
 }
 
-static promptly_result_t promptly_parse_input(PROMPTLY_CTX, const char ch)
+static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
 {
     const promptly_key_t key_type = classify_key(ch);
     switch (key_type)
@@ -180,7 +180,7 @@ static promptly_result_t promptly_parse_input(PROMPTLY_CTX, const char ch)
     return PROMPTLY_IDLE;
 }
 
-static promptly_result_t promptly_parse_extended(PROMPTLY_CTX, const char ch) 
+static promptly_result_t parse_extended(PROMPTLY_CTX, const char ch) 
 {
     enum { LEFT_ARROW = 'K', RIGHT_ARROW = 'M', UP_ARROW = 'H', DOWN_ARROW = 'P' };
         
@@ -252,11 +252,11 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch) {
     }
 
     case PROMPTLY_PARSE_INPUT: {
-        return promptly_parse_input(ctx, ch);
+        return parse_input(ctx, ch);
     }
 
     case PROMPTLY_PARSE_EXTENDED: {
-        return promptly_parse_extended(ctx, ch);
+        return parse_extended(ctx, ch);
     }
 
     default:
