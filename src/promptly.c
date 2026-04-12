@@ -202,7 +202,6 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
         }
 
         default:
-            printf("Unknown key: %d\n", (unsigned char)*ch);
             break;
         }
 
@@ -236,7 +235,6 @@ promtly_result_t promtly_edit_line(PROMTLY_CTX, char* ch) {
                 /* Handle down arrow key */
                 break;
             default:
-                printf("Unknown extended key: %d\n", (unsigned char)*ch);
                 break;
         }
 

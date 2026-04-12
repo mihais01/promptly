@@ -17,7 +17,6 @@ enum promptly_ctx_state {
 };
 
 typedef enum promtly_result {
-    PROMTLY_EDIT = 0,
     PROMTLY_IDLE,
     PROMTLY_END_LINE,
     PROMTLY_ERROR,
