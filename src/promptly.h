@@ -22,11 +22,6 @@ typedef enum promptly_result {
     PROMPTLY_ERROR,
 } promptly_result_t;
 
-struct promptly_cursor {
-    size_t row;
-    size_t col;
-};
-
 struct promptly_ctx {
     /* ==== Public configuration ==== */
     const char *prompt;
@@ -43,7 +38,6 @@ struct promptly_ctx {
     size_t cols;
     size_t rows; 
 
-    struct promptly_cursor cursor;
     enum promptly_ctx_state state;
 
     char metadata[32];
