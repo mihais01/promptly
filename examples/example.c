@@ -57,8 +57,8 @@ int main(void)
     char line[1024];
 
     struct promptly_ctx ctx = {
-        .prompt = ">>> ",
-        .prompt_length = 4,
+        .prompt = " >>> ",
+        .prompt_length = 5,
         .write = promptly_write,
 
         .line = line,
@@ -90,7 +90,7 @@ int main(void)
                 */
                 if( promptly_edit_line(&ctx, ch) == PROMPTLY_END_LINE) 
                 {
-                    printf("\nYou entered: %s\n", ctx.line);
+                    printf("You entered: %s\n", ctx.line);
                     break;
                 }
             }

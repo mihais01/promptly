@@ -197,6 +197,7 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
 
     case PROMPTLY_ENTER: {
             ctx->line[ctx->line_size] = '\0';
+            PROMPTLY_WRITE(ctx, "\n", 1);
             return PROMPTLY_END_LINE;
     }
     break;
