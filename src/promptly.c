@@ -25,15 +25,23 @@ typedef enum promptly_key {
 
 static promptly_key_t classify_key(char ch)
 {
-    if (ch == '\b' || ch == 127) {
-        return PROMPTLY_BACKSPACE;
-    } else if (ch == '\n' || ch == '\r') {
-        return PROMPTLY_ENTER;
-    } else if (isprint((unsigned char)ch)) {
-        return PROMPTLY_CHAR;
-    } else if (ch == (char)'\xE0') {
-        return PROMPTLY_EXTENDED;
+    switch (ch)
+    {
+        case '\b':
+        case 127:
+            return PROMPTLY_BACKSPACE;
+        case '\n':
+        case '\r':
+            return PROMPTLY_ENTER;
+        case (char)'\xE0': /* Extended key prefix for arrow keys on Windows */
+            return PROMPTLY_EXTENDED;
+    default:
+        if (isprint((unsigned char)ch)) {
+            return PROMPTLY_CHAR;
+        }
+        break;
     }
+
     return PROMPTLY_UNKNOWN;
 }
 
