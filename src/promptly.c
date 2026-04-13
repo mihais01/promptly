@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #include "promptly.h"
 
@@ -26,6 +27,19 @@ typedef enum promptly_key {
     PROMPTLY_CHAR,
     PROMPTLY_EXTENDED, /* Used for arrow keys */
 } promptly_key_t;
+
+__attribute__((unused))
+static void promptly_log(PROMPTLY_CTX, const char *format, ...) {
+    promptly_hide(ctx);     /* Hide the current line before logging */
+
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);  /* Log the message with variadic arguments */
+    va_end(args);
+    printf("\n");
+
+    promptly_show(ctx);     /* Re-show the line after logging */
+}
 
 static promptly_key_t classify_key(char ch)
 {
@@ -57,7 +71,7 @@ static size_t get_cursor_position(PROMPTLY_CTX)
         we can estimate the cursor's column position based on the prompt length
         and the current write position within the line. This is a simplification
     */
-    return ctx->prompt_length + ctx->line_wpos;
+    return ctx->prompt_length + ( ctx->line_wpos+1 );
 }
 
 static void move_cursor_left(PROMPTLY_CTX, size_t positions)
@@ -285,6 +299,7 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch)
     }
     
     case PROMPTLY_REQ_DSR: {
+        PROMPTLY_WRITE(ctx, "\x1b[999;999H", 11);
         PROMPTLY_WRITE(ctx, "\x1b[6n", 4);
         SET_CTX_STATE(ctx, PROMPTLY_PARSE_DSR);
         return PROMPTLY_IDLE;
@@ -337,6 +352,33 @@ void promptly_bell(PROMPTLY_CTX)
 {
     const char bell_seq[] = "\a";
     PROMPTLY_WRITE(ctx, bell_seq, sizeof(bell_seq) - 1);
+}
+
+__attribute__((unused))
+void promptly_hide(PROMPTLY_CTX)
+{
+    ctx->hcpos = get_cursor_position(ctx); /* Save current cursor position */
+    /* Move cursor to the beginning of the line */
+    set_cursor_position_col(ctx, 1);
+
+    /* Clear the line from the cursor to the end */
+    const char clear_line_seq[] = "\x1b[K";
+    PROMPTLY_WRITE(ctx, clear_line_seq, sizeof(clear_line_seq) - 1);
+}
+
+__attribute__((unused))
+void promptly_show(PROMPTLY_CTX)
+{
+    /* Move cursor to the beginning of the line */
+    set_cursor_position_col(ctx, 1);
+
+    /* Clear the line from the cursor to the end */
+    const char clear_line_seq[] = "\x1b[K";
+    PROMPTLY_WRITE(ctx, clear_line_seq, sizeof(clear_line_seq) - 1);
+
+    /* Re-show the prompt and line */
+    promptly_show_line(ctx);
+    set_cursor_position_col(ctx, ctx->hcpos);
 }
 
 void promptly_greet(void)
