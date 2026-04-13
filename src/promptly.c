@@ -49,6 +49,17 @@ static promptly_key_t classify_key(char ch)
     return PROMPTLY_UNKNOWN;
 }
 
+__attribute__((unused))
+static size_t get_cursor_position(PROMPTLY_CTX)
+{
+    /*
+        Without interogating the terminal for the actual cursor position,
+        we can estimate the cursor's column position based on the prompt length
+        and the current write position within the line. This is a simplification
+    */
+    return ctx->prompt_length + ctx->line_wpos;
+}
+
 static void move_cursor_left(PROMPTLY_CTX, size_t positions)
 {
     if(positions == 0) {
