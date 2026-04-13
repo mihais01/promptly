@@ -52,33 +52,35 @@ static void promptly_write(const char *message, size_t length) {
     fflush(stdout);
 }
 
-char line[1024];
-
-struct promptly_ctx ctx = {
-    .prompt = " >>> ",
-    .prompt_length = 5,
-    .line = line,
-    .line_length = sizeof(line),
-    .write = promptly_write,
-};
-
-for(;;)
-{
-    promptly_start_line(&ctx);
-
-    while(1)
+int main() {
+    char line[1024];
+    
+    struct promptly_ctx ctx = {
+        .prompt = " >>> ",
+        .prompt_length = 5,
+        .line = line,
+        .line_length = sizeof(line),
+        .write = promptly_write,
+    };
+    
+    for(;;)
     {
-        if(_kbhit()) /
+        promptly_start_line(&ctx);
+    
+        while(1)
         {
-            
-            const char ch = (char)_getch(); 
-            if( promptly_edit_line(&ctx, ch) == PROMPTLY_END_LINE) 
+            if(_kbhit())
             {
-                printf("You entered: %s\n", ctx.line);
-                break;
+                const char ch = (char)_getch(); 
+                if( promptly_edit_line(&ctx, ch) == PROMPTLY_END_LINE) 
+                {
+                    printf("You entered: %s\n", ctx.line);
+                    break;
+                }
             }
         }
     }
+    return 0;
 }
 
 ```
