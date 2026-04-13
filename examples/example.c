@@ -1,8 +1,7 @@
 #include "promptly.h"
 #include <stdio.h>
 #include <conio.h>
-
-#include <windows.h>
+#include <time.h>   
 
 /*
     Example usage of Promptly library. 
@@ -11,7 +10,6 @@
     
     The program continuously prompts the user for input until they choose to exit.
 */
-
 
 /*
     Custom write function for Promptly context. This function is responsible for 
@@ -24,6 +22,30 @@ static void promptly_write(const char *message, size_t length) {
     (void) length;    /* Unused parameter */
 
     fwrite(message, 1, length, stdout);
+    fflush(stdout);
+}
+
+/*
+    Print periodic message to demonstrate that the line editing is non-blocking.
+*/
+static void print_periodic_message(PROMPTLY_CTX)
+{
+    static clock_t last_print_time = 0;
+    static const int interval = 250;
+    if(last_print_time == 0) {
+        last_print_time = clock();
+    }
+
+    clock_t current_time = clock();
+    double elapsed_ms = (double)(current_time - last_print_time) * 1000 / CLOCKS_PER_SEC;
+
+    if (elapsed_ms >= interval) 
+    {
+        promptly_hide(ctx); /* Hide the current line before printing the message */
+        printf("[SYSTEM]: Wibbly-wobbly, timey-wimey... stuff.\n"); 
+        promptly_show(ctx); /* Re-show the line after printing the message */
+        last_print_time = current_time;
+    }
 }
 
 int main(void)
@@ -42,6 +64,7 @@ int main(void)
         .line = line,
         .line_length = sizeof(line),
     };
+
 
     for(;;)
     {
@@ -71,10 +94,8 @@ int main(void)
                     break;
                 }
             }
-            else
-            {
-                Sleep(10); /* Sleep briefly to avoid busy-waiting */
-            }
+
+            print_periodic_message(&ctx);
         }
     }
 

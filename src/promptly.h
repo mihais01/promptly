@@ -42,6 +42,8 @@ struct promptly_ctx {
 
     char metadata[32];
     uint8_t metadata_length;
+
+    size_t hcpos; /* Saved cursor position during hide */
 };
 
 promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch);
@@ -51,6 +53,10 @@ promptly_result_t promptly_start_line(PROMPTLY_CTX);
 void promptly_show_line(PROMPTLY_CTX);
 
 void promptly_bell(PROMPTLY_CTX);
+
+void promptly_hide(PROMPTLY_CTX);
+
+void promptly_show(PROMPTLY_CTX);
 
 void promptly_greet(void);
 
