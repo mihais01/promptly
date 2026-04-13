@@ -23,7 +23,8 @@ typedef enum promptly_key {
     PROMPTLY_EXTENDED, /* Used for arrow keys */
 } promptly_key_t;
 
-static promptly_key_t classify_key(char ch) {
+static promptly_key_t classify_key(char ch)
+{
     if (ch == '\b' || ch == 127) {
         return PROMPTLY_BACKSPACE;
     } else if (ch == '\n' || ch == '\r') {
@@ -36,8 +37,11 @@ static promptly_key_t classify_key(char ch) {
     return PROMPTLY_UNKNOWN;
 }
 
-static void move_cursor_left(PROMPTLY_CTX, size_t positions) {
-    if(positions == 0) return; /* No need to move */
+static void move_cursor_left(PROMPTLY_CTX, size_t positions)
+{
+    if(positions == 0) {
+        return; /* No need to move */
+    }
     if(positions == 1) {
         /* Optimization for single position move */
         PROMPTLY_WRITE(ctx, &(char){'\b'}, 1);
@@ -49,28 +53,33 @@ static void move_cursor_left(PROMPTLY_CTX, size_t positions) {
 }
 
 __attribute__((unused))
-static void move_cursor_right(PROMPTLY_CTX, size_t positions) {
-    if(positions == 0) return; /* No need to move */
+static void move_cursor_right(PROMPTLY_CTX, size_t positions)
+{
+    if(positions == 0) {
+        return; /* No need to move */
+    }
     char move_forward_seq[24];
     snprintf(move_forward_seq, sizeof(move_forward_seq), "\x1b[%zuC", positions);
     PROMPTLY_WRITE_STR(ctx, move_forward_seq);
 }
 
 __attribute__((unused))
-static void save_cursor_position(PROMPTLY_CTX) {
+static void save_cursor_position(PROMPTLY_CTX)
+{
     const char save_cursor_seq[] = "\033[s";  
     PROMPTLY_WRITE(ctx, save_cursor_seq, sizeof(save_cursor_seq) - 1);
 }
 
 __attribute__((unused))
-static void restore_cursor_position(PROMPTLY_CTX) {
+static void restore_cursor_position(PROMPTLY_CTX)
+{
     const char restore_cursor_seq[] = "\033[u";
     PROMPTLY_WRITE(ctx, restore_cursor_seq, sizeof(restore_cursor_seq) - 1);
 }
 
-static promptly_result_t parse_dsr_response(PROMPTLY_CTX, const char ch) {
-   if(ch=='R')
-    {
+static promptly_result_t parse_dsr_response(PROMPTLY_CTX, const char ch)
+{
+    if(ch=='R') {
         ctx->metadata[ctx->metadata_length] = '\0'; /* Null-terminate the metadata */
         if (sscanf(ctx->metadata, "\x1b[%zu;%zu", &ctx->rows, &ctx->cols) != 2) {
             ctx->cols = PROMPTLY_DEFAULT_COLS; /* Fallback to default if parsing fails */
@@ -80,8 +89,7 @@ static promptly_result_t parse_dsr_response(PROMPTLY_CTX, const char ch) {
         SET_CTX_STATE(ctx, PROMPTLY_SHOW_LINE);
         return PROMPTLY_CONTINUE(ctx); /* Trigger the next state immediately */
     }
-    else
-    {
+    else {
         if (ctx->metadata_length < sizeof(ctx->metadata) - 1) {
             ctx->metadata[ctx->metadata_length] = ch; /* Store metadata characters */
             ctx->metadata_length++;
@@ -99,12 +107,10 @@ static promptly_result_t parse_dsr_response(PROMPTLY_CTX, const char ch) {
 static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
 {
     const promptly_key_t key_type = classify_key(ch);
-    switch (key_type)
-    {
+    switch (key_type) {
     case PROMPTLY_BACKSPACE: {
             if(ctx->line_wpos > 0) {
-                if(ctx->line_wpos < ctx->line_size)
-                {
+                if(ctx->line_wpos < ctx->line_size) {
                     /* Deleting in the middle or beginning of the line */
                     memmove(&ctx->line[ctx->line_wpos - 1], 
                             &ctx->line[ctx->line_wpos], 
@@ -120,15 +126,13 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
                     
                     move_cursor_left(ctx, ctx->line_size - ctx->line_wpos + 1);
                 }
-                else
-                {
+                else {
                     ctx->line_wpos--;
                     ctx->line_size--;
                     PROMPTLY_WRITE_STR(ctx, "\b \b");                 
                 }
             }
-            else
-            {
+            else {
                 promptly_bell(ctx);
             }
     }
@@ -160,16 +164,14 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
                     
                     move_cursor_left(ctx, ctx->line_size - ctx->line_wpos);
                 }
-                else
-                {
+                else {
                     ctx->line[ctx->line_wpos] = ch; 
                     ctx->line_wpos++;
                     ctx->line_size++;
                     PROMPTLY_WRITE(ctx, &ch, 1);
                 }
             }
-            else
-            {
+            else {
                 /* Bell to indicate line buffer is full */
                 promptly_bell(ctx);             
             }
@@ -193,15 +195,13 @@ static promptly_result_t parse_extended(PROMPTLY_CTX, const char ch)
     enum { LEFT_ARROW = 'K', RIGHT_ARROW = 'M', UP_ARROW = 'H', DOWN_ARROW = 'P' };
         
     switch (ch) {
-        case LEFT_ARROW:
-        {
+        case LEFT_ARROW: {
             // Allow moving left only if we're not at the beginning of the line
             if(ctx->line_wpos > 0) {
                 ctx->line_wpos--;
                 PROMPTLY_WRITE_STR(ctx, "\b"); /* Move cursor left */
             }
-            else
-            {
+            else {
                 promptly_bell(ctx); /* Bell to indicate no more left movement */
             }
         }
@@ -211,8 +211,7 @@ static promptly_result_t parse_extended(PROMPTLY_CTX, const char ch)
                 ctx->line_wpos++;
                 PROMPTLY_WRITE_STR(ctx, "\x1b[C"); /* Move cursor right */
             }
-            else
-            {
+            else {
                 promptly_bell(ctx); /* Bell to indicate no more right movement */
             }
             /* Handle right arrow key */
@@ -231,13 +230,13 @@ static promptly_result_t parse_extended(PROMPTLY_CTX, const char ch)
     return PROMPTLY_IDLE;
 }
 
-promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch) {
+promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch)
+{
     if(ctx == NULL) {
         return PROMPTLY_ERROR;
     }
 
-    switch (ctx->state)
-    {
+    switch (ctx->state) {
     case PROMPTLY_NONE: {
         SET_CTX_STATE(ctx, PROMPTLY_REQ_DSR);
         return PROMPTLY_CONTINUE(ctx);
@@ -286,7 +285,8 @@ promptly_result_t promptly_start_line(PROMPTLY_CTX)
     return PROMPTLY_CONTINUE(ctx);
 }
 
-void promptly_show_line(PROMPTLY_CTX) {
+void promptly_show_line(PROMPTLY_CTX)
+{
     PROMPTLY_WRITE_STR(ctx, "\x1b[1G");
     PROMPTLY_WRITE_STR(ctx, ctx->prompt);
     PROMPTLY_WRITE(ctx, ctx->line, ctx->line_size);
@@ -298,6 +298,7 @@ void promptly_bell(PROMPTLY_CTX)
     PROMPTLY_WRITE(ctx, bell_seq, sizeof(bell_seq) - 1);
 }
 
-void promptly_greet(void) {
+void promptly_greet(void)
+{
     printf("Welcome to Promptly!\n");
 }
