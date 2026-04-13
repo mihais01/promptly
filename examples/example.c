@@ -32,7 +32,7 @@ int main(void)
        includes the null terminator. This buffer will be used by the Promptly 
        context to store the current line being edited by the user. 
     */
-    char line[32];
+    char line[1024];
 
     struct promptly_ctx ctx = {
         .prompt = ">>> ",

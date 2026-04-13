@@ -11,6 +11,12 @@
 
 #define PROMPTLY_WRITE(ctx, message, length) ctx->write(message, length);
 
+/*
+    The PROMPTLY_CONTINUE macro is a helper that simplifies the process of 
+    continuing to edit the line after certain operations. It calls the 
+    promptly_edit_line function with a null character, which allows the 
+    state machine to continue processing without needing an actual character input.
+*/
 #define PROMPTLY_CONTINUE(ctx) promptly_edit_line(ctx, '\0');
 
 typedef enum promptly_key {
