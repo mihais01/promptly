@@ -31,22 +31,6 @@ The project currently focuses on a minimal, embeddable API with a straightforwar
     `-- promptly.h
 ```
 
-## Build
-
-The repository includes a CMake preset for MinGW on Windows.
-
-```powershell
-cmake --preset "GCC 15.2.0 x86_64-w64-mingw32 (ucrt64)"
-cmake --build --preset "GCC 15.2.0 x86_64-w64-mingw32 (ucrt64)"
-```
-
-If you prefer configuring manually:
-
-```powershell
-cmake -S . -B out/build -G Ninja
-cmake --build out/build
-```
-
 ## Example
 
 The example in `examples/example.c` shows a non-blocking input loop built around `_kbhit()` and `_getch()`. While the user edits the current line, the program periodically prints a background message and then restores the prompt.
@@ -78,43 +62,34 @@ struct promptly_ctx ctx = {
     .write = promptly_write,
 };
 
-promptly_start_line(&ctx);
-```
+for(;;)
+{
+    promptly_start_line(&ctx);
 
-## Public API
-
-Main declarations are available in `src/promptly.h`.
-
-- `promptly_start_line(ctx)` resets the buffer and starts a new input session
-- `promptly_edit_line(ctx, ch)` advances the editor state machine with one input character
-- `promptly_show_line(ctx)` redraws the prompt and current buffer
-- `promptly_hide(ctx)` clears the visible line before external output
-- `promptly_show(ctx)` restores the prompt and input line after external output
-- `promptly_bell(ctx)` emits an audible terminal bell
-
-Result values:
-
-- `PROMPTLY_IDLE` means editing is still in progress
-- `PROMPTLY_END_LINE` means Enter was pressed and the line is complete
-- `PROMPTLY_ERROR` signals invalid state or invalid context
-
-## Notes And Limitations
-
-- The bundled example is Windows-oriented because it uses `conio.h`.
-- Extended key handling currently targets the `_getch()` style arrow-key codes used by the example.
-- The library is intentionally small and does not yet implement history, hints, or auto-completion.
-- Prompt length is provided explicitly through `prompt_length` in the context.
-- The caller owns the line buffer and is responsible for choosing its capacity.
+    while(1)
+    {
+        if(_kbhit()) /
+        {
+            
+            const char ch = (char)_getch(); 
+            if( promptly_edit_line(&ctx, ch) == PROMPTLY_END_LINE) 
+            {
+                printf("You entered: %s\n", ctx.line);
+                break;
+            }
+        }
+    }
+}
 
 ## Roadmap
 
 - Add context flags
 - Add CRLF handling option in the context
 - Add bypass commands outside the line editor flow
-- Replace `sscanf` parsing for terminal row and column handling
 - Add history
 - Add hints
 - Add auto-completion
+- Improve Line editing capabilities
 
 ## License
 
