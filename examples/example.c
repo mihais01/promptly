@@ -3,6 +3,11 @@
 #include <conio.h>
 #include <time.h>   
 
+#ifdef _WIN32
+    #include "windows_port.h"
+#endif
+
+
 /*
     Example usage of Promptly library. 
     This example demonstrates how to use the Promptly library to create a simple 
@@ -50,6 +55,13 @@ static void print_periodic_message(PROMPTLY_CTX)
 
 int main(void)
 {
+#ifdef _WIN32
+    /* Enable ANSI escape code processing on Windows */
+      if (!_windows_port_startup()) {
+        fprintf(stderr, "Warning: Could not initialize Windows console\n");
+    }
+#endif
+
     /* Buffer to hold the user input line. The size is set to 32 characters, which 
        includes the null terminator. This buffer will be used by the Promptly 
        context to store the current line being edited by the user. 
@@ -83,7 +95,6 @@ int main(void)
             {
                 /* Character pressed by the user */
                 const char ch = (char)_getch(); 
-
                 /* Pass the character to the Promptly line editor. If the user presses 
                    Enter, the function will return PROMPTLY_END_LINE, indicating that 
                    the line input is complete and can be processed.

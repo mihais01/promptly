@@ -135,7 +135,6 @@ static promptly_result_t parse_dsr_response(PROMPTLY_CTX, const char ch)
         return PROMPTLY_CONTINUE(ctx); 
     }
     else {
-
         /* We use the metadata buffer to accumulate the DSR response. */
         if (ctx->metadata_length < sizeof(ctx->metadata) - 1) {
             ctx->metadata[ctx->metadata_length] = ch; 
@@ -297,8 +296,7 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch)
     }
     
     case PROMPTLY_REQ_DSR: {
-        PROMPTLY_WRITE(ctx, "\x1b[999;999H", 11);
-        PROMPTLY_WRITE(ctx, "\x1b[6n", 4);
+        PROMPTLY_WRITE(ctx, "\x1b[999;999H\x1b[6n", 16); /* Move cursor to bottom-right and request position */
         SET_CTX_STATE(ctx, PROMPTLY_PARSE_DSR);
         return PROMPTLY_IDLE;
     }
