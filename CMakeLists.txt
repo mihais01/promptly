@@ -9,6 +9,7 @@ set(COMPILE_FLAGS_WARNING
     -Wextra
     -Wpedantic
     -Werror
+    -Wno-unused-function
     -Walloca
     -Wcast-align
     -Wcast-qual
