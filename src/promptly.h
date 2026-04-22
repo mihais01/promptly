@@ -14,6 +14,7 @@ enum promptly_ctx_state {
     PROMPTLY_SHOW_LINE,
     PROMPTLY_PARSE_INPUT,
     PROMPTLY_PARSE_EXTENDED,
+    PROMPTLY_PARSE_ESCAPE,
 };
 
 typedef enum promptly_result {

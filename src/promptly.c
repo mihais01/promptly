@@ -26,7 +26,19 @@ typedef enum promptly_key {
     PROMPTLY_ENTER,
     PROMPTLY_CHAR,
     PROMPTLY_EXTENDED, /* Used for arrow keys */
+    PROMPTLY_ESCAPE,   /* Used for escape sequences */
 } promptly_key_t;
+
+enum promptly_csi{ 
+    BRACKET     = '[',
+
+    CUB         = 'D', /* Cursor Back */ 
+    CUF         = 'C', /* Cursor Forward */
+    CUU         = 'A', /* Cursor Up */
+    CUD         = 'B', /* Cursor Down */
+
+    EL          = 'K', /* Erase in Line */
+};
 
 static void promptly_log(PROMPTLY_CTX, const char *format, ...) {
     promptly_hide(ctx);     /* Hide the current line before logging */
@@ -52,6 +64,8 @@ static promptly_key_t classify_key(char ch)
             return PROMPTLY_ENTER;
         case (char)'\xE0':
             return PROMPTLY_EXTENDED;
+        case (char)'\x1B':
+            return PROMPTLY_ESCAPE;
     default:
         if (isprint((unsigned char)ch)) {
             return PROMPTLY_CHAR;
@@ -234,7 +248,82 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
         break;  
     }
 
+    case PROMPTLY_ESCAPE: {
+        SET_CTX_STATE(ctx, PROMPTLY_PARSE_ESCAPE);
+        break;
+    }
+
     default:
+        break;
+    }
+
+    return PROMPTLY_IDLE;
+}
+
+static void parse_arrow_movement(PROMPTLY_CTX, const enum promptly_csi csi)
+{
+    switch (csi) {
+        case CUB: {
+            // Allow moving left only if we're not at the beginning of the line
+            if(ctx->line_wpos > 0) {
+                ctx->line_wpos--;
+                move_cursor_left(ctx, 1);
+            }
+            else {
+                promptly_bell(ctx); 
+            }
+        }
+        break;
+        case CUF:
+            if(ctx->line_wpos < ctx->line_size) {
+                ctx->line_wpos++;
+                move_cursor_right(ctx, 1);
+            }
+            else {
+                promptly_bell(ctx); 
+            }
+            /* Handle right arrow key */
+            break;
+        case CUU:
+            /* Handle up arrow key */
+            break;
+        case CUD:
+            /* Handle down arrow key */
+            break;
+        default:
+            /* Should not reach here for arrow keys */
+            break;
+    }
+}
+
+
+
+static promptly_result_t parse_escape(PROMPTLY_CTX, const char ch)
+{
+    const enum promptly_csi _csi = (enum promptly_csi)ch;
+
+    switch (_csi) {
+        case BRACKET:
+            /*
+                Store in in metadata, maybe for future use 
+            */
+            ctx->metadata[0] = ch;
+            ctx->metadata_length = 1;
+            SET_CTX_STATE(ctx, PROMPTLY_PARSE_ESCAPE);
+            break;
+        case CUB:
+        case CUF:
+        case CUU:
+        case CUD:
+            /* Handle basic arrow keys */
+            parse_arrow_movement(ctx, _csi);
+            SET_CTX_STATE(ctx, PROMPTLY_PARSE_INPUT);
+            break;
+        case EL:
+            /* Handle simple escape sequences */
+            break;
+        default:
+            SET_CTX_STATE(ctx, PROMPTLY_PARSE_INPUT);
         break;
     }
 
@@ -285,6 +374,8 @@ static promptly_result_t parse_extended(PROMPTLY_CTX, const char ch)
 
 promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch)
 {
+    //promptly_log(ctx, "State: %d, Char: '%c' (0x%02X)", ctx->state, isprint((unsigned char)ch) ? ch : '.', (unsigned char)ch);
+
     if(ctx == NULL) {
         return PROMPTLY_ERROR;
     }
@@ -317,6 +408,10 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch)
 
     case PROMPTLY_PARSE_EXTENDED: {
         return parse_extended(ctx, ch);
+    }
+
+    case PROMPTLY_PARSE_ESCAPE: {
+        return parse_escape(ctx, ch);
     }
 
     default:
