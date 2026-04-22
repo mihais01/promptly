@@ -70,7 +70,6 @@ for(;;)
     {
         if(_kbhit()) /
         {
-            
             const char ch = (char)_getch(); 
             if( promptly_edit_line(&ctx, ch) == PROMPTLY_END_LINE) 
             {

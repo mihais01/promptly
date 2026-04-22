@@ -28,7 +28,6 @@ typedef enum promptly_key {
     PROMPTLY_EXTENDED, /* Used for arrow keys */
 } promptly_key_t;
 
-__attribute__((unused))
 static void promptly_log(PROMPTLY_CTX, const char *format, ...) {
     promptly_hide(ctx);     /* Hide the current line before logging */
 
@@ -63,7 +62,6 @@ static promptly_key_t classify_key(char ch)
     return PROMPTLY_UNKNOWN;
 }
 
-__attribute__((unused))
 static size_t get_cursor_position(PROMPTLY_CTX)
 {
     /*
@@ -91,7 +89,6 @@ static void move_cursor_left(PROMPTLY_CTX, size_t positions)
     }
 }
 
-__attribute__((unused))
 static void set_cursor_position_col(PROMPTLY_CTX, size_t col)
 {
     char move_to_col_seq[24];
@@ -113,14 +110,12 @@ static void move_cursor_right(PROMPTLY_CTX, size_t positions)
     }
 }
 
-__attribute__((unused))
 static void save_cursor_position(PROMPTLY_CTX)
 {
     const char save_cursor_seq[] = "\033[s";  
     PROMPTLY_WRITE(ctx, save_cursor_seq, sizeof(save_cursor_seq) - 1);
 }
 
-__attribute__((unused))
 static void restore_cursor_position(PROMPTLY_CTX)
 {
     const char restore_cursor_seq[] = "\033[u";
@@ -287,6 +282,8 @@ static promptly_result_t parse_extended(PROMPTLY_CTX, const char ch)
     return PROMPTLY_IDLE;
 }
 
+/* ---------------------- Public API implementations ---------------------- */
+
 promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch)
 {
     if(ctx == NULL) {
@@ -355,7 +352,6 @@ void promptly_bell(PROMPTLY_CTX)
     PROMPTLY_WRITE(ctx, bell_seq, sizeof(bell_seq) - 1);
 }
 
-__attribute__((unused))
 void promptly_hide(PROMPTLY_CTX)
 {
     ctx->hcpos = get_cursor_position(ctx); /* Save current cursor position */
@@ -367,7 +363,6 @@ void promptly_hide(PROMPTLY_CTX)
     PROMPTLY_WRITE(ctx, clear_line_seq, sizeof(clear_line_seq) - 1);
 }
 
-__attribute__((unused))
 void promptly_show(PROMPTLY_CTX)
 {
     /* Move cursor to the beginning of the line */
