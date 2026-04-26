@@ -25,7 +25,6 @@ typedef enum promptly_key {
     PROMPTLY_BACKSPACE,
     PROMPTLY_ENTER,
     PROMPTLY_CHAR,
-    PROMPTLY_EXTENDED, /* Used for arrow keys */
     PROMPTLY_ESCAPE,   /* Used for escape sequences */
 } promptly_key_t;
 
@@ -62,8 +61,6 @@ static promptly_key_t classify_key(char ch)
         case '\n':
         case '\r':
             return PROMPTLY_ENTER;
-        case (char)'\xE0':
-            return PROMPTLY_EXTENDED;
         case (char)'\x1B':
             return PROMPTLY_ESCAPE;
     default:
@@ -243,11 +240,6 @@ static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
     }
     break;
 
-    case PROMPTLY_EXTENDED: {
-        SET_CTX_STATE(ctx, PROMPTLY_PARSE_EXTENDED);
-        break;  
-    }
-
     case PROMPTLY_ESCAPE: {
         SET_CTX_STATE(ctx, PROMPTLY_PARSE_ESCAPE);
         break;
@@ -404,10 +396,6 @@ promptly_result_t promptly_edit_line(PROMPTLY_CTX, const char ch)
 
     case PROMPTLY_PARSE_INPUT: {
         return parse_input(ctx, ch);
-    }
-
-    case PROMPTLY_PARSE_EXTENDED: {
-        return parse_extended(ctx, ch);
     }
 
     case PROMPTLY_PARSE_ESCAPE: {
