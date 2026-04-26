@@ -20,13 +20,13 @@
 */
 #define PROMPTLY_CONTINUE(ctx) promptly_edit_line(ctx, '\0');
 
-typedef enum promptly_key {
+enum promptly_key {
     PROMPTLY_UNKNOWN = 0,
     PROMPTLY_BACKSPACE,
     PROMPTLY_ENTER,
     PROMPTLY_CHAR,
     PROMPTLY_ESCAPE,   /* Used for escape sequences */
-} promptly_key_t;
+};
 
 enum promptly_csi{ 
     BRACKET     = '[',
@@ -51,7 +51,7 @@ static void promptly_log(PROMPTLY_CTX, const char *format, ...) {
     promptly_show(ctx);     /* Re-show the line after logging */
 }
 
-static promptly_key_t classify_key(char ch)
+static enum promptly_key classify_key(char ch)
 {
     switch (ch)
     {
@@ -166,7 +166,7 @@ static promptly_result_t parse_dsr_response(PROMPTLY_CTX, const char ch)
 
 static promptly_result_t parse_input(PROMPTLY_CTX, const char ch)
 {
-    const promptly_key_t key_type = classify_key(ch);
+    const enum promptly_key key_type = classify_key(ch);
     switch (key_type) {
     case PROMPTLY_BACKSPACE: {
             if(ctx->line_wpos > 0) {
